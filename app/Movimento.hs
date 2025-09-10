@@ -1,9 +1,11 @@
 module Movimento where
 
 import Types
+import Types (Fighter(normalAttack))
+import Data.Maybe (Maybe(Nothing))
 
 gravity :: Float
-gravity = -25
+gravity = -22
 
 jumpInitialVel :: Float
 jumpInitialVel = 10
@@ -12,6 +14,7 @@ atualiza :: Float -> World -> World
 atualiza dt w@(World { player1 = p1, player2 = p2, mapa = mp }) =
   w { player1 = atualizaP dt p1 p2 mp, player2 = atualizaP dt p2 p1 mp}
 
+-- actualiza um fighter dado o delta-time e o mapa
 -- actualiza um fighter dado o delta-time e o mapa
 atualizaP :: Float -> Fighter -> Fighter -> Mapa -> Fighter
 atualizaP dt f1@(Fighter { fighterPos = (x,y)
@@ -26,17 +29,22 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
            (Mapa {paredeEsq = pe, chao = ch, paredeDir = pd}) =
 
   let
-    -- movimento horizontal
+    -- avança ataque normal
+    normalAttack' = stepNormalAttack dt (normalAttack f1)
+    -- atualizamos f1 já com a instância de ataque avançada
+    f1' = f1 { normalAttack = normalAttack' }
+
+    -- movimento horizontal (vx é velocidade em px/s -> multiplicamos por dt)
     dx
-      | kl && not kr = -vx
-      | kr && not kl = vx
+      | kl && not kr = - vx
+      | kr && not kl =   vx
       | otherwise    = 0
     x'
       | x + dx <= pe - 2 = pe - 2
       | x + dx >= pd + 1 = pd + 1
       | otherwise = x + dx
 
-    -- movimento vertical
+    -- movimento vertical (mantive a tua lógica)
     (y', vy', stance') = case stance of
       Jumping ->
         let vy0 = if vy == 0 then jumpInitialVel else vy
@@ -70,13 +78,24 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
 
     -- troca de direção (usando x' depois do movimento)
     dir' 
-      | dir == Direita && x' > z = Esquerda
-      | dir == Esquerda  && x' < z = Direita
+      | dir == Direita && x' > z && normalAttack' == Nothing = Esquerda
+      | dir == Esquerda  && x' < z && normalAttack' == Nothing = Direita
       | otherwise = dir
 
-  in f1 { fighterPos = (x', y')
-        , fighterVelY = vy'
-        , fighterStance = stance''
-        , fighterDir = dir' }
+  -- devolve f1' (já com normalAttack atualizado) e aplica as alterações de posição/estado
+  in f1' { fighterPos = (x', y')
+         , fighterVelY = vy'
+         , fighterStance = stance''
+         , fighterDir = dir' }
 
 
+-- avança a instância do ataque normal dt segundos
+stepNormalAttack :: Float -> Maybe AttackInstance -> Maybe AttackInstance
+stepNormalAttack _ Nothing = Nothing
+stepNormalAttack dt (Just ai@(AttackInstance phase t))
+  | t > dt = Just (ai { aiTimer = t - dt })
+  | otherwise =
+      case phase of
+        Windup   -> Just (AttackInstance Peak     (naPeak   defaultNormalAttack))
+        Peak     -> Just (AttackInstance Recovery (naRecovery defaultNormalAttack))
+        Recovery -> Nothing

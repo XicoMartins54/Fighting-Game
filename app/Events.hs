@@ -18,6 +18,10 @@ reageEventosPlayer1 (EventKey (Char c) Down _ _) f
   | toLower c == 'a' = f { keyLeft = True }
   | toLower c == 'd' = f { keyRight = True }
   | toLower c == 's' = f { keyDown = True }
+  | toLower c == 'v' =
+      case normalAttack f of
+        Nothing -> f { normalAttack = Just (AttackInstance Windup (naWindup defaultNormalAttack)) }
+        Just _  -> f
 reageEventosPlayer1 (EventKey (Char c) Up _ _) f
   | toLower c == 'a' = f { keyLeft = False }
   | toLower c == 'd' = f { keyRight = False }
@@ -37,5 +41,8 @@ reageEventosPlayer2 (EventKey (SpecialKey KeyRight) Down _ _) f = f { keyRight =
 reageEventosPlayer2 (EventKey (SpecialKey KeyRight) Up _ _) f = f { keyRight = False }
 reageEventosPlayer2 (EventKey (SpecialKey KeyDown) Down _ _) f = f { keyDown = True }
 reageEventosPlayer2 (EventKey (SpecialKey KeyDown) Up _ _) f = f { keyDown = False }
-
+reageEventosPlayer2 (EventKey (Char '3') Down _ _) f =
+  case normalAttack f of
+    Nothing -> f { normalAttack = Just (AttackInstance Windup (naWindup defaultNormalAttack)) }
+    Just _ -> f
 reageEventosPlayer2 _ f = f

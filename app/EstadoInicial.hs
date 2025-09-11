@@ -1,6 +1,7 @@
 module EstadoInicial where
 
 import Types
+import Types (Peso(MuitoPesado))
 
 estadoInicial :: World
 estadoInicial = World {player1 = p1, player2 = p2, mapa = mp}
@@ -12,7 +13,8 @@ estadoInicial = World {player1 = p1, player2 = p2, mapa = mp}
             }
         p1 = Fighter { fighterPos = (-600, 0)
              , fighterVida = 100
-             , fighterTamanho = 300
+             , fighterTamanho = 150
+             , fighterPeso = MuitoPesado
              , fighterStance = Standing
              , fighterDir = Direita
              , fighterVelX = 10
@@ -25,7 +27,8 @@ estadoInicial = World {player1 = p1, player2 = p2, mapa = mp}
 
         p2 = Fighter { fighterPos = (600, 0)
              , fighterVida = 100
-             , fighterTamanho = 300
+             , fighterTamanho = 200
+             , fighterPeso = Medio
              , fighterStance = Standing
              , fighterDir = Esquerda
              , fighterVelX = 10

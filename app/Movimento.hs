@@ -1,11 +1,15 @@
 module Movimento where
 
 import Types
-import Types (Fighter(normalAttack, fighterTamanho))
+import Types (Fighter(normalAttack, fighterTamanho, fighterPeso))
 import Data.Maybe (Maybe(Nothing))
 
-gravity :: Float
-gravity = -5000
+gravityForPeso :: Peso -> Float
+gravityForPeso MuitoLeve   = -4500
+gravityForPeso Leve        = -6000
+gravityForPeso Medio       = -7500
+gravityForPeso Pesado      = -9000
+gravityForPeso MuitoPesado = -10500
 
 jumpInitialVel :: Float
 jumpInitialVel = 2250
@@ -19,6 +23,7 @@ atualiza dt w@(World { player1 = p1, player2 = p2, mapa = mp }) =
 atualizaP :: Float -> Fighter -> Fighter -> Mapa -> Fighter
 atualizaP dt f1@(Fighter { fighterPos = (x,y)
                         , fighterTamanho = tam
+                        , fighterPeso = peso
                         , fighterVelX = vx
                         , fighterVelY = vy
                         , fighterStance = stance
@@ -45,18 +50,20 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
       | x + dx >= pd - tam / 2 = pd - tam / 2
       | otherwise = x + dx
 
+    g = gravityForPeso peso
+
     -- movimento vertical (mantive a tua lógica)
     (y', vy', stance') = case stance of
       Jumping ->
         let vy0 = if vy == 0 then jumpInitialVel else vy
-            vy1 = vy0 + gravity * dt
+            vy1 = vy0 + g * dt
             y1  = y + vy1 * dt
         in if vy1 <= 0
            then (y1, vy1, Falling)
            else (y1, vy1, Jumping)
 
       Falling ->
-        let vy1 = vy + gravity * dt
+        let vy1 = vy + g * dt
             y1  = y + vy1 * dt
         in if y1 <= ch
            then (ch, 0, Standing)
@@ -64,7 +71,7 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
 
       _ ->
         if y > ch
-        then let vy1 = vy + gravity * dt
+        then let vy1 = vy + g * dt
                  y1  = y + vy1 * dt
              in if y1 <= ch
                 then (ch, 0, Standing)

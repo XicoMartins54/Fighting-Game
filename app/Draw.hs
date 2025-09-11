@@ -3,6 +3,7 @@ module Draw where
 import Types
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
+import Types (Fighter(fighterTamanho))
 
 
 
@@ -20,28 +21,26 @@ desenha w@(World { player1 = p1, player2 = p2, mapa = map}) =
 
 
 desenhaPlayer1 :: Fighter -> Picture
-desenhaPlayer1 p1@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = stance}) = 
+desenhaPlayer1 p1@(Fighter {fighterPos = (x,y), fighterTamanho = altura,fighterDir = dir, fighterStance = stance}) = 
     case stance of
         Crouching -> corpoCrouching
         _ -> corpoStanding
     where
-        altura = 300
         largura = altura / 2
         corpoStanding = Color red $ Translate (x + largura/2) (y + altura/2 - 450) $ rectangleSolid largura altura
-        corpoCrouching = Color red $ Translate (x + largura/2) (y + altura/2 - 535) $ rectangleSolid largura (altura / 3)
+        corpoCrouching = Color red $ Translate (x + largura/2) (altura/2 - altura/3 - 450) $ rectangleSolid largura (altura / 3)
 
 
 
 desenhaPlayer2 :: Fighter -> Picture
-desenhaPlayer2 p1@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = stance}) = 
+desenhaPlayer2 p1@(Fighter {fighterPos = (x,y), fighterTamanho = altura, fighterDir = dir, fighterStance = stance}) = 
     case stance of
         Crouching -> corpoCrouching
         _ -> corpoStanding
     where
-        altura = 300
         largura = altura / 2
         corpoStanding = Color blue $ Translate (x + largura/2) (y + altura/2 - 450) $ rectangleSolid largura altura
-        corpoCrouching = Color blue $ Translate (x + largura/2) (y + altura/2 - 535) $ rectangleSolid largura (altura / 3)
+        corpoCrouching = Color blue $ Translate (x + largura/2) (altura/2 - altura/3 - 450) $ rectangleSolid largura (altura / 3)
 
 
 

@@ -15,6 +15,7 @@ data Fighter = Fighter
     {
         fighterPos :: Posicao,
         fighterTamanho :: Float,
+        fighterPeso :: Peso,
 
         fighterVida :: Float,
 
@@ -60,6 +61,14 @@ defaultNormalAttack = NormalAttackDef
   , naHeight   = 60
   }
 
+
+data Peso 
+  = MuitoLeve
+  | Leve
+  | Medio
+  | Pesado
+  | MuitoPesado
+  deriving (Eq, Show)
 
 data Direcao
     = Esquerda

@@ -14,6 +14,14 @@ gravityForPeso MuitoPesado = -10500
 jumpInitialVel :: Float
 jumpInitialVel = 2250
 
+velocidadeForPeso :: Peso -> Float
+velocidadeForPeso MuitoLeve   = 13
+velocidadeForPeso Leve        = 11
+velocidadeForPeso Medio       = 9
+velocidadeForPeso Pesado      = 7
+velocidadeForPeso MuitoPesado = 5
+
+
 atualiza :: Float -> World -> World
 atualiza dt w@(World { player1 = p1, player2 = p2, mapa = mp }) =
   w { player1 = atualizaP dt p1 p2 mp, player2 = atualizaP dt p2 p1 mp}
@@ -24,7 +32,6 @@ atualizaP :: Float -> Fighter -> Fighter -> Mapa -> Fighter
 atualizaP dt f1@(Fighter { fighterPos = (x,y)
                         , fighterTamanho = tam
                         , fighterPeso = peso
-                        , fighterVelX = vx
                         , fighterVelY = vy
                         , fighterStance = stance
                         , fighterDir = dir
@@ -51,6 +58,8 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
       | otherwise = x + dx
 
     g = gravityForPeso peso
+
+    vx = velocidadeForPeso peso
 
     -- movimento vertical (mantive a tua lógica)
     (y', vy', stance') = case stance of

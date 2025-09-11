@@ -23,7 +23,6 @@ data Fighter = Fighter
 
         fighterDir :: Direcao,
 
-        fighterVelX   :: Float,
         fighterVelY   :: Float,
 
         keyLeft       :: Bool,

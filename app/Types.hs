@@ -14,6 +14,7 @@ type Posicao = (Float, Float)
 data Fighter = Fighter
     {
         fighterPos :: Posicao,
+        fighterTamanho :: Float,
 
         fighterVida :: Float,
 
@@ -75,4 +76,3 @@ data Stance
 type IsHit = Bool
 
 type IsInvincible = Bool 
-

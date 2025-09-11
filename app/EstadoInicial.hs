@@ -6,15 +6,16 @@ estadoInicial :: World
 estadoInicial = World {player1 = p1, player2 = p2, mapa = mp}
     where
         mp = Mapa {
-            paredeEsq = -5
+            paredeEsq = -870
             , chao = 0
-            , paredeDir = 5
+            , paredeDir = 870
             }
-        p1 = Fighter { fighterPos = (-6, 0)
+        p1 = Fighter { fighterPos = (-600, 0)
              , fighterVida = 100
+             , fighterTamanho = 300
              , fighterStance = Standing
              , fighterDir = Direita
-             , fighterVelX = 0.05
+             , fighterVelX = 10
              , fighterVelY = 0
              , keyLeft = False
              , keyRight = False
@@ -22,11 +23,12 @@ estadoInicial = World {player1 = p1, player2 = p2, mapa = mp}
              , normalAttack = Nothing
              }
 
-        p2 = Fighter { fighterPos = (5, 0)
+        p2 = Fighter { fighterPos = (600, 0)
              , fighterVida = 100
+             , fighterTamanho = 300
              , fighterStance = Standing
              , fighterDir = Esquerda
-             , fighterVelX = 0.05
+             , fighterVelX = 10
              , fighterVelY = 0
              , keyLeft = False
              , keyRight = False

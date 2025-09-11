@@ -1,14 +1,14 @@
 module Movimento where
 
 import Types
-import Types (Fighter(normalAttack))
+import Types (Fighter(normalAttack, fighterTamanho))
 import Data.Maybe (Maybe(Nothing))
 
 gravity :: Float
-gravity = -22
+gravity = -5000
 
 jumpInitialVel :: Float
-jumpInitialVel = 10
+jumpInitialVel = 2250
 
 atualiza :: Float -> World -> World
 atualiza dt w@(World { player1 = p1, player2 = p2, mapa = mp }) =
@@ -18,6 +18,7 @@ atualiza dt w@(World { player1 = p1, player2 = p2, mapa = mp }) =
 -- actualiza um fighter dado o delta-time e o mapa
 atualizaP :: Float -> Fighter -> Fighter -> Mapa -> Fighter
 atualizaP dt f1@(Fighter { fighterPos = (x,y)
+                        , fighterTamanho = tam
                         , fighterVelX = vx
                         , fighterVelY = vy
                         , fighterStance = stance
@@ -40,8 +41,8 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
       | kr && not kl =   vx
       | otherwise    = 0
     x'
-      | x + dx <= pe - 2 = pe - 2
-      | x + dx >= pd + 1 = pd + 1
+      | x + dx <= pe = pe
+      | x + dx >= pd - tam / 2 = pd - tam / 2
       | otherwise = x + dx
 
     -- movimento vertical (mantive a tua lógica)

@@ -25,10 +25,10 @@ desenhaPlayer1 p1@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance 
         Crouching -> corpoCrouching
         _ -> corpoStanding
     where
-        altura = 250
+        altura = 300
         largura = altura / 2
-        corpoStanding = Color red $ Translate (largura * x + largura/2) (altura * y + altura/2 - 450) $ rectangleSolid largura altura
-        corpoCrouching = Color red $ Translate (largura * x + largura/2) (altura * y + altura/2 - 535) $ rectangleSolid largura (altura / 3)
+        corpoStanding = Color red $ Translate (x + largura/2) (y + altura/2 - 450) $ rectangleSolid largura altura
+        corpoCrouching = Color red $ Translate (x + largura/2) (y + altura/2 - 535) $ rectangleSolid largura (altura / 3)
 
 
 
@@ -38,10 +38,10 @@ desenhaPlayer2 p1@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance 
         Crouching -> corpoCrouching
         _ -> corpoStanding
     where
-        altura = 250
+        altura = 300
         largura = altura / 2
-        corpoStanding = Color blue $ Translate (largura * x + largura/2) (altura * y + altura/2 - 450) $ rectangleSolid largura altura
-        corpoCrouching = Color blue $ Translate (largura * x + largura/2) (altura * y + altura/2 - 535) $ rectangleSolid largura (altura / 3)
+        corpoStanding = Color blue $ Translate (x + largura/2) (y + altura/2 - 450) $ rectangleSolid largura altura
+        corpoCrouching = Color blue $ Translate (x + largura/2) (y + altura/2 - 535) $ rectangleSolid largura (altura / 3)
 
 
 
@@ -49,9 +49,9 @@ desenhaMapa :: Mapa -> Picture
 desenhaMapa mapa@(Mapa esq chao dir) = Pictures [paredeEsq, floor, paredeDir]
     where
         largura = 60
-        paredeEsq = Color white $ Translate (esq - largura/2 - 870) 0 $ rectangleSolid largura 1060
+        paredeEsq = Color white $ Translate (esq - largura/2) 0 $ rectangleSolid largura 1060
         floor = Color white $ Translate 0 (chao - largura/2 - 450) $ rectangleSolid 1920 largura
-        paredeDir = Color white $ Translate (dir + largura/2 + 870) 0 $ rectangleSolid largura 1060
+        paredeDir = Color white $ Translate (dir + largura/2) 0 $ rectangleSolid largura 1060
 
 desenhaHitbox :: Fighter -> Picture
 desenhaHitbox f@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = stance, keyLeft = kl, keyRight = kr}) =

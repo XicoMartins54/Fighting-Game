@@ -53,27 +53,22 @@ desenhaMapa mapa@(Mapa esq chao dir) = Pictures [paredeEsq, floor, paredeDir]
         paredeDir = Color white $ Translate (dir + largura/2) 0 $ rectangleSolid largura 1060
 
 desenhaHitbox :: Fighter -> Picture
-desenhaHitbox f@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = stance, keyLeft = kl, keyRight = kr}) =
+desenhaHitbox f@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = stance, fighterTamanho = altura, keyLeft = kl, keyRight = kr}) =
   case normalAttackHitbox f of
     Nothing -> Blank
     Just (cx, w, h) ->
         case stance of
-            Standing ->
-                if kl && not kr then Translate (largura * x + largura/2 - cx) (altura * y + altura/2 - 420) $ Color orange $ rectangleSolid w h
-                else if not kl && kr then Translate (largura * x + largura/2 + cx) (altura * y + altura/2 - 420) $ Color orange $ rectangleSolid w h
-                else if dir == Esquerda then Translate (largura * x + largura/2 - cx) (altura * y + altura/2 - 420) $ Color orange $ rectangleSolid w h
-                else Translate (largura * x + largura/2 + cx) (altura * y + altura/2 - 420) $ Color orange $ rectangleSolid w h
-            Crouching -> Translate (largura * x + largura/2) (altura * y + altura/2 - 545) $ Color orange $ rectangleSolid w h
-            Jumping -> Translate (largura * x + largura/2) (altura * y + altura/2 - 400 + cx) $ Rotate 90 $ Color orange $ rectangleSolid w h
-            Falling -> Translate (largura * x + largura/2) (altura * y + altura/2 - 400 + cx) $ Rotate (-90) $ Color orange $ rectangleSolid w h
+            Standing -> Translate (x + largura/2 + cx) (y + altura/3*2 - 450) $ Color orange $ rectangleSolid w h
+            Crouching -> Translate (x + largura/2 + cx) (h/2 - 450) $ Color orange $ rectangleSolid w h
             where
-                altura = 250
                 largura = altura / 2
 
 normalAttackHitbox :: Fighter -> Maybe (Float, Float, Float)
 normalAttackHitbox (Fighter { normalAttack = Nothing }) = Nothing
 normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _)
-                             , fighterDir = dir }) =
+                             , fighterDir = dir
+                             , keyLeft = kl
+                             , keyRight = kr}) =
   let def   = defaultNormalAttack
       w     = naWidth def
       h     = naHeight def
@@ -81,7 +76,12 @@ normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _)
         Windup   -> 0.5
         Peak     -> 1
         Recovery -> 0.5
+      sign
+        | kl && not kr = -1
+        | not kl && kr = 1
+        | dir == Esquerda = -1
+        | otherwise = 1
       w'   = w * mult
       h'   = h
-      offX = w'/2
+      offX = sign * w'/2
   in Just (offX, w', h')

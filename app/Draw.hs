@@ -63,25 +63,3 @@ desenhaHitbox f@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = 
             where
                 largura = altura / 2
 
-normalAttackHitbox :: Fighter -> Maybe (Float, Float, Float)
-normalAttackHitbox (Fighter { normalAttack = Nothing }) = Nothing
-normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _)
-                             , fighterDir = dir
-                             , keyLeft = kl
-                             , keyRight = kr}) =
-  let def   = defaultNormalAttack
-      w     = naWidth def
-      h     = naHeight def
-      mult = case phase of
-        Windup   -> 0.5
-        Peak     -> 1
-        Recovery -> 0.5
-      sign
-        | kl && not kr = -1
-        | not kl && kr = 1
-        | dir == Esquerda = -1
-        | otherwise = 1
-      w'   = w * mult
-      h'   = h
-      offX = sign * w'/2
-  in Just (offX, w', h')

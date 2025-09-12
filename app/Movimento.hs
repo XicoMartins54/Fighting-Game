@@ -43,7 +43,7 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
 
   let
     -- avança ataque normal
-    normalAttack' = stepNormalAttack dt (normalAttack f1)
+    normalAttack' = stepNormalAttack dt f1 (normalAttack f1)
     -- atualizamos f1 já com a instância de ataque avançada
     f1' = f1 { normalAttack = normalAttack' }
 
@@ -107,12 +107,12 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
 
 
 -- avança a instância do ataque normal dt segundos
-stepNormalAttack :: Float -> Maybe AttackInstance -> Maybe AttackInstance
-stepNormalAttack _ Nothing = Nothing
-stepNormalAttack dt (Just ai@(AttackInstance phase t))
+stepNormalAttack :: Float -> Fighter -> Maybe AttackInstance -> Maybe AttackInstance
+stepNormalAttack _ _ Nothing = Nothing
+stepNormalAttack dt f (Just ai@(AttackInstance phase t))
   | t > dt = Just (ai { aiTimer = t - dt })
   | otherwise =
       case phase of
-        Windup   -> Just (AttackInstance Peak     (naPeak   defaultNormalAttack))
-        Peak     -> Just (AttackInstance Recovery (naRecovery defaultNormalAttack))
+        Windup   -> Just (AttackInstance Peak     (naPeak   (defaultNormalAttack f)))
+        Peak     -> Just (AttackInstance Recovery (naRecovery (defaultNormalAttack f)))
         Recovery -> Nothing

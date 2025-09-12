@@ -51,13 +51,13 @@ data NormalAttackDef = NormalAttackDef
   , naHeight  :: Float   -- altura do hitbox
   } deriving (Eq, Show)
 
-defaultNormalAttack :: NormalAttackDef
-defaultNormalAttack = NormalAttackDef
+defaultNormalAttack :: Fighter -> NormalAttackDef
+defaultNormalAttack f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
   { naWindup   = 0.1
   , naPeak     = 0.08
   , naRecovery = 0.1
-  , naWidth    = 150
-  , naHeight   = 60
+  , naWidth    = tam / 5 * 3
+  , naHeight   = tam / 5
   }
 
 
@@ -84,3 +84,27 @@ data Stance
 type IsHit = Bool
 
 type IsInvincible = Bool 
+
+
+normalAttackHitbox :: Fighter -> Maybe (Float, Float, Float)
+normalAttackHitbox (Fighter { normalAttack = Nothing }) = Nothing
+normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _)
+                             , fighterDir = dir
+                             , keyLeft = kl
+                             , keyRight = kr}) =
+  let def   = defaultNormalAttack f
+      w     = naWidth def
+      h     = naHeight def
+      mult = case phase of
+        Windup   -> 0.6
+        Peak     -> 1
+        Recovery -> 0.6
+      sign
+        | kl && not kr = -1
+        | not kl && kr = 1
+        | dir == Esquerda = -1
+        | otherwise = 1
+      w'   = w * mult
+      h'   = h
+      offX = sign * w'/2
+  in Just (offX, w', h')

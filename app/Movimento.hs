@@ -1,7 +1,7 @@
 module Movimento where
 
 import Types
-import Types (Fighter(normalAttack, fighterTamanho, fighterPeso))
+import Types (Fighter(normalAttack, fighterTamanho, fighterPeso), AttackInstance)
 import Data.Maybe (Maybe(Nothing))
 
 gravityForPeso :: Peso -> Float
@@ -14,12 +14,17 @@ gravityForPeso MuitoPesado = -10500
 jumpInitialVel :: Float
 jumpInitialVel = 2250
 
-velocidadeForPeso :: Peso -> Float
-velocidadeForPeso MuitoLeve   = 13
-velocidadeForPeso Leve        = 11
-velocidadeForPeso Medio       = 9
-velocidadeForPeso Pesado      = 7
-velocidadeForPeso MuitoPesado = 5
+velocidadeForPeso :: Peso -> Maybe AttackInstance -> Float
+velocidadeForPeso MuitoLeve   Nothing = 13
+velocidadeForPeso Leve        Nothing = 11
+velocidadeForPeso Medio       Nothing = 9
+velocidadeForPeso Pesado      Nothing = 7
+velocidadeForPeso MuitoPesado Nothing = 5
+velocidadeForPeso MuitoLeve   _ = 13 / 4
+velocidadeForPeso Leve        _ = 11 / 4
+velocidadeForPeso Medio       _ = 9 / 4
+velocidadeForPeso Pesado      _ = 7 / 4
+velocidadeForPeso MuitoPesado _ = 5 / 4
 
 
 atualiza :: Float -> World -> World
@@ -68,7 +73,7 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
 
     g = gravityForPeso peso
 
-    vx = velocidadeForPeso peso
+    vx = velocidadeForPeso peso (normalAttack f1')
 
     -- movimento vertical (mantive a tua lógica)
     (y', vy', stance') = case stance of

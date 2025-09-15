@@ -71,7 +71,7 @@ defaultNormalAttack f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
 defaultNormalAttackDown :: Fighter -> NormalAttackDef
 defaultNormalAttackDown f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
   { naWindup   = 0
-  , naPeak     = 0.08
+  , naPeak     = 1
   , naRecovery = 0
   , naWidth    = tam / 2
   , naHeight   = tam / 3

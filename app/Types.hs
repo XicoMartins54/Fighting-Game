@@ -86,25 +86,37 @@ type IsHit = Bool
 type IsInvincible = Bool 
 
 
-normalAttackHitbox :: Fighter -> Maybe (Float, Float, Float)
+normalAttackHitbox :: Fighter -> Maybe (Float, Float, Float, Float)
 normalAttackHitbox (Fighter { normalAttack = Nothing }) = Nothing
 normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _)
+                             , fighterTamanho = tam
+                             , fighterStance = stance
                              , fighterDir = dir
                              , keyLeft = kl
-                             , keyRight = kr}) =
+                             , keyRight = kr
+                             , keyDown = kd }) =
+
   let def   = defaultNormalAttack f
       w     = naWidth def
       h     = naHeight def
-      mult = case phase of
-        Windup   -> 0.6
-        Peak     -> 1
-        Recovery -> 0.6
+      mult  = case phase of
+                Windup   -> 0.6
+                Peak     -> 1
+                Recovery -> 0.6
       sign
-        | kl && not kr = -1
-        | not kl && kr = 1
+        | kl && not kr   = -1
+        | not kl && kr   = 1
         | dir == Esquerda = -1
-        | otherwise = 1
+        | otherwise      = 1
       w'   = w * mult
-      h'   = h
-      offX = sign * w'/2
-  in Just (offX, w', h')
+      offX = sign * w' / 2
+      offY = tam / 3 * 2
+  in case stance of
+       Jumping  -> if kd
+                   then Just (0, offY + h/2, tam/2, h)
+                   else Just (offX, 0, w', h)
+       Falling  -> if kd
+                   then Just (0, offY + h/2, tam/2, h)
+                   else Just (offX, 0, w', h)
+       Standing -> Just (offX, 0, w', h)
+       Crouching -> Just (offX, 0, w', h)

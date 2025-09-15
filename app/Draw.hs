@@ -56,10 +56,10 @@ desenhaHitbox :: Fighter -> Picture
 desenhaHitbox f@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = stance, fighterTamanho = altura, keyLeft = kl, keyRight = kr}) =
   case normalAttackHitbox f of
     Nothing -> Blank
-    Just (cx, w, h) ->
+    Just (cx, cy, w, h) ->
         case stance of
-            Standing -> Translate (x + largura/2 + cx) (y + altura/3*2 - 450) $ Color orange $ rectangleSolid w h
-            Crouching -> Translate (x + largura/2 + cx) (h/2 - 450) $ Color orange $ rectangleSolid w h
+            Crouching -> Translate (x + largura/2 + cx) (h/2 - 450 - cy) $ Color orange $ rectangleSolid w h
+            _ -> Translate (x + largura/2 + cx) (y + altura/3*2 - 450 - cy) $ Color orange $ rectangleSolid w h
             where
                 largura = altura / 2
 

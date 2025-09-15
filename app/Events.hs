@@ -6,8 +6,7 @@ import Data.Char (toLower)
 
 reageEventos :: Event -> World -> World
 reageEventos e w@(World { player1 = p1, player2 = p2, mapa = m }) =
-  w { player1 = reageEventosPlayer1 e p1, player2 = reageEventosPlayer2 e p2 } 
-
+  w { player1 = reageEventosPlayer1 e p1, player2 = reageEventosPlayer2 e p2 }
 
 
 

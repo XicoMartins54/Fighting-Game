@@ -60,6 +60,15 @@ defaultNormalAttack f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
   , naHeight   = tam / 5
   }
 
+defaultNormalAttackDown :: Fighter -> NormalAttackDef
+defaultNormalAttackDown f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
+  { naWindup   = 0
+  , naPeak     = 5
+  , naRecovery = 0
+  , naWidth    = tam / 2
+  , naHeight   = tam / 3
+  }
+
 
 data Peso 
   = MuitoLeve
@@ -97,8 +106,11 @@ normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _)
                              , keyDown = kd }) =
 
   let def   = defaultNormalAttack f
+      defDown = defaultNormalAttackDown f
       w     = naWidth def
       h     = naHeight def
+      wDown = naWidth defDown
+      hDown = naHeight defDown
       mult  = case phase of
                 Windup   -> 0.6
                 Peak     -> 1
@@ -113,10 +125,10 @@ normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _)
       offY = tam / 3 * 2
   in case stance of
        Jumping  -> if kd
-                   then Just (0, offY + h/2, tam/2, h)
+                   then Just (0, offY + hDown/2, wDown, hDown)
                    else Just (offX, 0, w', h)
        Falling  -> if kd
-                   then Just (0, offY + h/2, tam/2, h)
+                   then Just (0, offY + hDown/2, wDown, hDown)
                    else Just (offX, 0, w', h)
        Standing -> Just (offX, 0, w', h)
        Crouching -> Just (offX, 0, w', h)

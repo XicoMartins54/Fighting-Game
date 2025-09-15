@@ -20,11 +20,8 @@ velocidadeForPeso Leve        Nothing = 11
 velocidadeForPeso Medio       Nothing = 9
 velocidadeForPeso Pesado      Nothing = 7
 velocidadeForPeso MuitoPesado Nothing = 5
-velocidadeForPeso MuitoLeve   _ = 13 / 4
-velocidadeForPeso Leve        _ = 11 / 4
-velocidadeForPeso Medio       _ = 9 / 4
-velocidadeForPeso Pesado      _ = 7 / 4
-velocidadeForPeso MuitoPesado _ = 5 / 4
+velocidadeForPeso _ _ = 0
+
 
 
 atualiza :: Float -> World -> World
@@ -123,12 +120,12 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
 -- avança a instância do ataque normal dt segundos
 stepNormalAttack :: Float -> Fighter -> Maybe AttackInstance -> Maybe AttackInstance
 stepNormalAttack _ _ Nothing = Nothing
-stepNormalAttack dt f (Just ai@(AttackInstance phase t hasHit dmg))
+stepNormalAttack dt f (Just ai@(AttackInstance phase t hasHit dmg dirAtaque))
   | t > dt = Just (ai { aiTimer = t - dt })
   | otherwise =
       case phase of
-        Windup   -> Just (AttackInstance Peak     (naPeak   (defaultNormalAttack f)) False (naDamage (defaultNormalAttack f)))
-        Peak     -> Just (AttackInstance Recovery (naRecovery (defaultNormalAttack f)) hasHit (aiDamage ai))
+        Windup   -> Just (AttackInstance Peak     (naPeak   (defaultNormalAttack f)) False (naDamage (defaultNormalAttack f)) dirAtaque)
+        Peak     -> Just (AttackInstance Recovery (naRecovery (defaultNormalAttack f)) hasHit dmg dirAtaque)
         Recovery -> Nothing
 
 
@@ -173,7 +170,7 @@ decayInv dt f@(Fighter { isInvincible = inv, invincibleTimer = t })
 applyAttackOnce :: Fighter -> Fighter -> (Fighter, Fighter)
 applyAttackOnce attacker defender =
   case normalAttack attacker of
-    Just ai@(AttackInstance Peak _ hasHit dmg) | not hasHit ->
+    Just ai@(AttackInstance Peak _ hasHit dmg dirAtaque) | not hasHit ->
       case attackHitboxWorld attacker of
         Just hbAtt ->
           let hbDef = fighterHurtbox defender

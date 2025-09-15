@@ -20,8 +20,9 @@ reageEventosPlayer1 (EventKey (Char c) Down _ _) f
   | toLower c == 'v' =
       case normalAttack f of
         Nothing ->
-          let def = defaultNormalAttack f
-          in f { normalAttack = Just (AttackInstance Windup (naWindup def) False (naDamage def)) }
+          let def       = defaultNormalAttack f
+              dirAtaque = chooseAttackDir f
+          in f { normalAttack = Just (AttackInstance Windup (naWindup def) False (naDamage def) dirAtaque) }
         Just _  -> f
 reageEventosPlayer1 (EventKey (Char c) Up _ _) f
   | toLower c == 'a' = f { keyLeft = False }
@@ -44,8 +45,9 @@ reageEventosPlayer2 (EventKey (SpecialKey KeyDown) Down _ _) f = f { keyDown = T
 reageEventosPlayer2 (EventKey (SpecialKey KeyDown) Up _ _) f = f { keyDown = False }
 reageEventosPlayer2 (EventKey (Char '3') Down _ _) f =
   case normalAttack f of
-    Nothing ->
-      let def = defaultNormalAttack f
-      in f { normalAttack = Just (AttackInstance Windup (naWindup def) False (naDamage def)) }
-    Just _ -> f
+        Nothing ->
+          let def       = defaultNormalAttack f
+              dirAtaque = chooseAttackDir f
+          in f { normalAttack = Just (AttackInstance Windup (naWindup def) False (naDamage def) dirAtaque) }
+        Just _  -> f
 reageEventosPlayer2 _ f = f

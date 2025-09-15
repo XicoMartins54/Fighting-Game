@@ -73,11 +73,11 @@ defaultNormalAttack f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
 defaultNormalAttackDown :: Fighter -> NormalAttackDef
 defaultNormalAttackDown f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
   { naWindup   = 0
-  , naPeak     = 1
+  , naPeak     = 5
   , naRecovery = 0
   , naWidth    = tam / 2
   , naHeight   = tam / 3
-  , naDamage   = 12
+  , naDamage   = 100
   }
 
 
@@ -137,9 +137,12 @@ normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _ _ _ 
                   Peak     -> 1
                   Recovery -> 0.6
 
-      isDownAttack = case aiDir of
-                       Baixo -> True; BaixoDir -> True; BaixoEsq -> True
-                       _     -> False
+      isDownAttack = case normalAttack f of
+                        Just (AttackInstance _ _ _ _ aiDir) 
+                          | fighterStance f /= Crouching -> aiDir `elem` [Baixo, BaixoDir, BaixoEsq]
+                          | otherwise -> False
+                        _ -> False
+
 
       -- sinal horizontal segundo a direcção do ataque guardada
       signX = case aiDir of

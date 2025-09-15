@@ -16,8 +16,20 @@ background :: Color
 background = greyN 0
 
 desenha :: World -> Picture
-desenha w@(World { player1 = p1, player2 = p2, mapa = map}) =
-  Pictures [desenhaMapa map, desenhaPlayer1 p1, desenhaHitbox p1, desenhaPlayer2 p2, desenhaHitbox p2, desenhaVidaP1 p1, desenhaVidaP2 p2]
+desenha w@(World { player1 = p1, player2 = p2, mapa = mp }) =
+    let
+        (front, back, drawFront, drawBack) =
+            if fighterTamanho p1 > fighterTamanho p2 then (p2, p1, desenhaPlayer2, desenhaPlayer1)
+            else (p1, p2, desenhaPlayer1, desenhaPlayer2)
+    in Pictures
+       [ desenhaMapa mp
+       , drawBack back
+       , desenhaHitbox back
+       , drawFront front
+       , desenhaHitbox front
+       , desenhaVidaP1 p1
+       , desenhaVidaP2 p2
+       ]
 
 
 desenhaPlayer1 :: Fighter -> Picture

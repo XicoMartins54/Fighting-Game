@@ -19,11 +19,15 @@ reageEventosPlayer1 (EventKey (Char c) Down _ _) f
   | toLower c == 's' = f { keyDown = True }
   | toLower c == 'v' =
       case normalAttack f of
-        Nothing ->
-          let def       = defaultNormalAttack f
-              dirAtaque = chooseAttackDir f
-          in f { normalAttack = Just (AttackInstance Windup (naWindup def) False (naDamage def) dirAtaque) }
-        Just _  -> f
+      Nothing ->
+        let dirAtaque = chooseAttackDir f
+            def       = case dirAtaque of
+                          Baixo    -> defaultNormalAttackDown f
+                          BaixoDir -> defaultNormalAttackDown f
+                          BaixoEsq -> defaultNormalAttackDown f
+                          _        -> defaultNormalAttack f
+        in f { normalAttack = Just (AttackInstance Windup (naWindup def) False (naDamage def) dirAtaque) }
+      Just _  -> f
 reageEventosPlayer1 (EventKey (Char c) Up _ _) f
   | toLower c == 'a' = f { keyLeft = False }
   | toLower c == 'd' = f { keyRight = False }
@@ -45,9 +49,13 @@ reageEventosPlayer2 (EventKey (SpecialKey KeyDown) Down _ _) f = f { keyDown = T
 reageEventosPlayer2 (EventKey (SpecialKey KeyDown) Up _ _) f = f { keyDown = False }
 reageEventosPlayer2 (EventKey (Char '3') Down _ _) f =
   case normalAttack f of
-        Nothing ->
-          let def       = defaultNormalAttack f
-              dirAtaque = chooseAttackDir f
-          in f { normalAttack = Just (AttackInstance Windup (naWindup def) False (naDamage def) dirAtaque) }
-        Just _  -> f
+      Nothing ->
+        let dirAtaque = chooseAttackDir f
+            def       = case dirAtaque of
+                          Baixo    -> defaultNormalAttackDown f
+                          BaixoDir -> defaultNormalAttackDown f
+                          BaixoEsq -> defaultNormalAttackDown f
+                          _        -> defaultNormalAttack f
+        in f { normalAttack = Just (AttackInstance Windup (naWindup def) False (naDamage def) dirAtaque) }
+      Just _  -> f
 reageEventosPlayer2 _ f = f

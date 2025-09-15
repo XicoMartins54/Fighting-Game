@@ -53,26 +53,39 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
            (Mapa {paredeEsq = pe, chao = ch, paredeDir = pd}) =
 
   let
-    -- avança ataque normal
+    -- avança a instância do ataque
     normalAttack' = stepNormalAttack dt f1 (normalAttack f1)
+
     -- atualizamos f1 já com a instância de ataque avançada
     f1' = f1 { normalAttack = normalAttack' }
+
+    -- detecta se o ataque actual é um "down attack"
+    isDownAttack = case normalAttack' of
+                    Just (AttackInstance _ _ _ _ aiDir)
+                      | stance /= Crouching -> aiDir `elem` [Baixo, BaixoDir, BaixoEsq]
+                      | otherwise -> False
+                    Nothing -> False
+
+
+    -- velocidade horizontal depende se tem ataque activo (ex.: slows while attacking)
+    vx = velocidadeForPeso peso normalAttack'
 
     -- movimento horizontal (vx é velocidade em px/s -> multiplicamos por dt)
     dx
       | kl && not kr = - vx
       | kr && not kl =   vx
       | otherwise    = 0
+
     x'
       | x + dx <= pe = pe
       | x + dx >= pd - tam / 2 = pd - tam / 2
       | otherwise = x + dx
 
-    g = gravityForPeso peso
+    -- gravidade base e possível amplificação durante down-attack
+    gBase = gravityForPeso peso
+    g = if isDownAttack then gBase * 2 else gBase
 
-    vx = velocidadeForPeso peso (normalAttack f1')
-
-    -- movimento vertical (mantive a tua lógica)
+    -- movimento vertical (mantive a tua lógica, usando g)
     (y', vy', stance') = case stance of
       Jumping ->
         let vy0 = if vy == 0 then jumpInitialVel else vy
@@ -98,23 +111,42 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
                 else (y1, vy1, Falling)
         else (ch, 0, stance)
 
-    -- crouching
-    stance''
-      | y' <= ch && kd = Crouching
-      | y' <= ch       = Standing
-      | otherwise      = stance'
+    -- se é um down-attack e tocou o chão, força y/ch/stance
+    (yFinal, vyFinal, touchedGroundByDownAttack) =
+      if isDownAttack && y' <= ch
+      then (ch, 0, True)
+      else (y', vy', False)
+
+    -- combinar regra de crouch com o caso especial do down-attack atingindo o chão
+    stanceCombined
+      | touchedGroundByDownAttack = Standing               -- down-attack que bateu no chão -> fica Standing
+      | yFinal <= ch && kd        = Crouching              -- tecla para baixo -> crouch (quando no chão)
+      | yFinal <= ch               = Standing
+      | otherwise                 = stance'
 
     -- troca de direção (usando x' depois do movimento)
-    dir' 
+    -- só troca de facing quando não há ataque activo (impede inverter frente do hitbox)
+    dir'
       | dir == Direita && x' > z && normalAttack' == Nothing = Esquerda
       | dir == Esquerda  && x' < z && normalAttack' == Nothing = Direita
       | otherwise = dir
 
-  -- devolve f1' (já com normalAttack atualizado) e aplica as alterações de posição/estado
-  in f1' { fighterPos = (x', y')
-         , fighterVelY = vy'
-         , fighterStance = stance''
-         , fighterDir = dir' }
+    -- actualizar o AttackInstance caso um down-attack tenha tocado o chão:
+    -- passa para Recovery (com timers da definição down) ou termina se já estiver em Recovery
+    normalAttackFinal = case normalAttack' of
+      Just ai@(AttackInstance phase _ hasHit dmg dirAtaque)
+        | touchedGroundByDownAttack ->
+            let defDown = defaultNormalAttackDown f1
+            in case phase of
+                 Recovery -> Nothing
+                 _        -> Just (AttackInstance Recovery (naRecovery defDown) hasHit dmg dirAtaque)
+      _ -> normalAttack'
+
+  in f1' { fighterPos    = (x', yFinal)
+        , fighterVelY   = vyFinal
+        , fighterStance = stanceCombined
+        , fighterDir    = dir'
+        , normalAttack  = normalAttackFinal }
 
 
 -- avança a instância do ataque normal dt segundos
@@ -123,10 +155,20 @@ stepNormalAttack _ _ Nothing = Nothing
 stepNormalAttack dt f (Just ai@(AttackInstance phase t hasHit dmg dirAtaque))
   | t > dt = Just (ai { aiTimer = t - dt })
   | otherwise =
-      case phase of
-        Windup   -> Just (AttackInstance Peak     (naPeak   (defaultNormalAttack f)) False (naDamage (defaultNormalAttack f)) dirAtaque)
-        Peak     -> Just (AttackInstance Recovery (naRecovery (defaultNormalAttack f)) hasHit dmg dirAtaque)
-        Recovery -> Nothing
+      -- Se o fighter está Crouching, usamos sempre o default normal (proíbe down-attack properties)
+      let def = if fighterStance f == Crouching
+                  then defaultNormalAttack f
+                  else case dirAtaque of
+                         Baixo    -> defaultNormalAttackDown f
+                         BaixoDir -> defaultNormalAttackDown f
+                         BaixoEsq -> defaultNormalAttackDown f
+                         _        -> defaultNormalAttack f
+      in case phase of
+           Windup   -> Just (AttackInstance Peak     (naPeak def)     False (naDamage def) dirAtaque)
+           Peak     -> Just (AttackInstance Recovery (naRecovery def) False (naDamage def) dirAtaque)
+           Recovery -> Nothing
+
+
 
 
 rectsIntersect :: (Float,Float,Float,Float) -> (Float,Float,Float,Float) -> Bool

@@ -29,7 +29,10 @@ data Fighter = Fighter
         keyRight      :: Bool,
         keyDown       :: Bool,
 
-        normalAttack  :: Maybe AttackInstance
+        normalAttack  :: Maybe AttackInstance,
+
+        isInvincible  :: Bool,
+        invincibleTimer:: Float
     }
     deriving (Eq, Show)
 
@@ -38,17 +41,21 @@ data AttackPhase = Windup | Peak | Recovery
   deriving (Eq, Show)
 
 data AttackInstance = AttackInstance
-  { aiPhase :: AttackPhase   -- fase actual
-  , aiTimer :: Float         -- tempo restante na fase (segundos)
+  { aiPhase   :: AttackPhase   -- fase actual
+  , aiTimer   :: Float         -- tempo restante na fase (segundos)
+  , aiHasHit  :: Bool          -- já acertou durante esta instância?
+  , aiDamage  :: Float         -- dano desta instância
   } deriving (Eq, Show)
+
 
 -- definição de parâmetros do ataque normal (constante global)
 data NormalAttackDef = NormalAttackDef
-  { naWindup  :: Tempo   -- duracao da windup (s)
-  , naPeak    :: Tempo   -- duracao da peak (s)
-  , naRecovery:: Tempo   -- duracao da recovery (s)
-  , naWidth   :: Float   -- largura do hitbox
-  , naHeight  :: Float   -- altura do hitbox
+  { naWindup   :: Tempo   -- duracao da windup (s)
+  , naPeak     :: Tempo   -- duracao da peak (s)
+  , naRecovery :: Tempo   -- duracao da recovery (s)
+  , naWidth    :: Float   -- largura do hitbox
+  , naHeight   :: Float   -- altura do hitbox
+  , naDamage   :: Float   -- dano do ataque
   } deriving (Eq, Show)
 
 defaultNormalAttack :: Fighter -> NormalAttackDef
@@ -58,15 +65,17 @@ defaultNormalAttack f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
   , naRecovery = 0.1
   , naWidth    = tam / 5 * 3
   , naHeight   = tam / 5
+  , naDamage   = 10    -- escolhe o valor que quiseres
   }
 
 defaultNormalAttackDown :: Fighter -> NormalAttackDef
 defaultNormalAttackDown f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
   { naWindup   = 0
-  , naPeak     = 5
+  , naPeak     = 0.08
   , naRecovery = 0
   , naWidth    = tam / 2
   , naHeight   = tam / 3
+  , naDamage   = 12
   }
 
 
@@ -97,7 +106,7 @@ type IsInvincible = Bool
 
 normalAttackHitbox :: Fighter -> Maybe (Float, Float, Float, Float)
 normalAttackHitbox (Fighter { normalAttack = Nothing }) = Nothing
-normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _)
+normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _ _ _)
                              , fighterTamanho = tam
                              , fighterStance = stance
                              , fighterDir = dir

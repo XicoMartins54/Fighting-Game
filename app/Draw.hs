@@ -17,7 +17,7 @@ background = greyN 0
 
 desenha :: World -> Picture
 desenha w@(World { player1 = p1, player2 = p2, mapa = map}) =
-  Pictures [desenhaMapa map, desenhaPlayer1 p1, desenhaHitbox p1, desenhaPlayer2 p2, desenhaHitbox p2]
+  Pictures [desenhaMapa map, desenhaPlayer1 p1, desenhaHitbox p1, desenhaPlayer2 p2, desenhaHitbox p2, desenhaVidaP1 p1, desenhaVidaP2 p2]
 
 
 desenhaPlayer1 :: Fighter -> Picture
@@ -63,3 +63,14 @@ desenhaHitbox f@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = 
             where
                 largura = altura / 2
 
+desenhaVidaP1 :: Fighter -> Picture
+desenhaVidaP1 f@(Fighter {fighterVida = vida}) = Translate (-600) 300 $ Pictures [barra, barraVida]
+    where
+        barra = Color (greyN 0.5) $ rectangleSolid 600 80
+        barraVida = Color green $ rectangleSolid (6 * vida) 80
+
+desenhaVidaP2 :: Fighter -> Picture
+desenhaVidaP2 f@(Fighter {fighterVida = vida}) = Translate 600 300 $ Pictures [barra, barraVida]
+    where
+        barra = Color (greyN 0.5) $ rectangleSolid 600 80
+        barraVida = Color green $ rectangleSolid (6 * vida) 80

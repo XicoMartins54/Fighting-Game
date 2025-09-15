@@ -12,28 +12,33 @@ estadoInicial = World {player1 = p1, player2 = p2, mapa = mp}
             , paredeDir = 870
             }
         p1 = Fighter { fighterPos = (-600, 0)
-             , fighterVida = 100
-             , fighterTamanho = 200
-             , fighterPeso = MuitoLeve
-             , fighterStance = Standing
-             , fighterDir = Direita
-             , fighterVelY = 0
-             , keyLeft = False
-             , keyRight = False
-             , keyDown = False
-             , normalAttack = Nothing
-             }
+                     , fighterVida = 100
+                     , fighterTamanho = 200
+                     , fighterPeso = MuitoLeve
+                     , fighterStance = Standing
+                     , fighterDir = Direita
+                     , fighterVelY = 0
+                     , keyLeft = False
+                     , keyRight = False
+                     , keyDown = False
+                     , normalAttack = Nothing
+                     , isInvincible = False
+                     , invincibleTimer = 0
+                     }
 
         p2 = Fighter { fighterPos = (600, 0)
-             , fighterVida = 100
-             , fighterTamanho = 400
-             , fighterPeso = MuitoPesado
-             , fighterStance = Standing
-             , fighterDir = Esquerda
-             , fighterVelY = 0
-             , keyLeft = False
-             , keyRight = False
-             , keyDown = False
-             , normalAttack = Nothing
-             }
+                     , fighterVida = 100
+                     , fighterTamanho = 400
+                     , fighterPeso = MuitoPesado
+                     , fighterStance = Standing
+                     , fighterDir = Direita
+                     , fighterVelY = 0
+                     , keyLeft = False
+                     , keyRight = False
+                     , keyDown = False
+                     , normalAttack = Nothing
+                     , isInvincible = False
+                    , invincibleTimer = 0
+                     }
+             
         

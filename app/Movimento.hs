@@ -24,7 +24,16 @@ velocidadeForPeso MuitoPesado = 5
 
 atualiza :: Float -> World -> World
 atualiza dt w@(World { player1 = p1, player2 = p2, mapa = mp }) =
-  w { player1 = atualizaP dt p1 p2 mp, player2 = atualizaP dt p2 p1 mp}
+  let p1' = atualizaP dt p1 p2 mp
+      p2' = atualizaP dt p2 p1 mp
+
+      -- decresce timers de invencibilidade antes de checar colisões
+      p1d = decayInv dt p1'
+      p2d = decayInv dt p2'
+
+      -- depois resolve colisões e aplica danos
+      (p1final, p2final) = resolveCollisions p1d p2d
+  in w { player1 = p1final, player2 = p2final }
 
 -- actualiza um fighter dado o delta-time e o mapa
 -- actualiza um fighter dado o delta-time e o mapa
@@ -109,10 +118,76 @@ atualizaP dt f1@(Fighter { fighterPos = (x,y)
 -- avança a instância do ataque normal dt segundos
 stepNormalAttack :: Float -> Fighter -> Maybe AttackInstance -> Maybe AttackInstance
 stepNormalAttack _ _ Nothing = Nothing
-stepNormalAttack dt f (Just ai@(AttackInstance phase t))
+stepNormalAttack dt f (Just ai@(AttackInstance phase t hasHit dmg))
   | t > dt = Just (ai { aiTimer = t - dt })
   | otherwise =
       case phase of
-        Windup   -> Just (AttackInstance Peak     (naPeak   (defaultNormalAttack f)))
-        Peak     -> Just (AttackInstance Recovery (naRecovery (defaultNormalAttack f)))
+        Windup   -> Just (AttackInstance Peak     (naPeak   (defaultNormalAttack f)) False (naDamage (defaultNormalAttack f)))
+        Peak     -> Just (AttackInstance Recovery (naRecovery (defaultNormalAttack f)) hasHit (aiDamage ai))
         Recovery -> Nothing
+
+
+rectsIntersect :: (Float,Float,Float,Float) -> (Float,Float,Float,Float) -> Bool
+rectsIntersect (cx1, cy1, w1, h1) (cx2, cy2, w2, h2) =
+  (abs (cx1 - cx2) * 2 <= (w1 + w2)) && (abs (cy1 - cy2) * 2 <= (h1 + h2))
+
+
+attackHitboxWorld :: Fighter -> Maybe (Float,Float,Float,Float)
+attackHitboxWorld f@(Fighter { fighterPos = (x,y)
+                            , fighterTamanho = altura
+                            , fighterStance = stance }) =
+  case normalAttackHitbox f of
+    Nothing -> Nothing
+    Just (cx, cy, w, h) ->
+      let largura = altura / 2
+          centerX = x + largura/2 + cx
+          centerY = case stance of
+                      Crouching -> (h/2) - 450 - cy
+                      _         -> y + (altura/3*2) - 450 - cy
+      in Just (centerX, centerY, w, h)
+
+-- hurtbox do corpo do fighter (mesmas coordenadas que usas no desenho)
+fighterHurtbox :: Fighter -> (Float,Float,Float,Float)
+fighterHurtbox f@(Fighter { fighterPos = (x,y)
+                          , fighterTamanho = altura
+                          , fighterStance = stance }) =
+  let largura = altura / 2
+  in case stance of
+       Crouching -> (x + largura/2, (altura/2 - altura/3 - 450), largura, (altura / 3))
+       _         -> (x + largura/2, (y + altura/2 - 450), largura, altura)
+
+-- decrementa invincibility timer
+decayInv :: Float -> Fighter -> Fighter
+decayInv dt f@(Fighter { isInvincible = inv, invincibleTimer = t })
+  | not inv = f
+  | otherwise =
+      let t' = t - dt
+      in if t' <= 0 then f { isInvincible = False, invincibleTimer = 0 } else f { invincibleTimer = t' }
+
+-- aplica ataque de attacker a defender, se em Peak e se intersecta e defender não invencível
+applyAttackOnce :: Fighter -> Fighter -> (Fighter, Fighter)
+applyAttackOnce attacker defender =
+  case normalAttack attacker of
+    Just ai@(AttackInstance Peak _ hasHit dmg) | not hasHit ->
+      case attackHitboxWorld attacker of
+        Just hbAtt ->
+          let hbDef = fighterHurtbox defender
+          in if (not (isInvincible defender)) && rectsIntersect hbAtt hbDef
+             then
+               let defender' = defender { fighterVida = fighterVida defender - dmg
+                                       , isInvincible = True
+                                       , invincibleTimer = 0.4  -- 400ms invencibilidade (ajusta)
+                                       }
+                   ai' = ai { aiHasHit = True }
+                   attacker' = attacker { normalAttack = Just ai' }
+               in (attacker', defender')
+             else (attacker, defender)
+        Nothing -> (attacker, defender)
+    _ -> (attacker, defender)
+
+-- resolve colisões dos dois fighters (aplica ataques de ambos, sem duplicar)
+resolveCollisions :: Fighter -> Fighter -> (Fighter, Fighter)
+resolveCollisions p1 p2 =
+  let (p1a, p2a) = applyAttackOnce p1 p2   -- p1 tenta acertar p2
+      (p2b, p1b) = applyAttackOnce p2a p1a -- p2 (actualizado) tenta acertar p1 (actualizado)
+  in (p1b, p2b)

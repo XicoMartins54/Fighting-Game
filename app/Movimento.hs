@@ -161,10 +161,12 @@ stepNormalAttack dt f (Just ai@(AttackInstance phase t hasHit dmg dirAtaque))
                          Baixo    -> defaultNormalAttackDown f
                          BaixoDir -> defaultNormalAttackDown f
                          BaixoEsq -> defaultNormalAttackDown f
-                         _        -> defaultNormalAttack f  -- inclui up aqui
+                         _        -> defaultNormalAttack f
       in case phase of
+           Start    -> Just (AttackInstance Windup     (naWindup def)     False (naDamage def) dirAtaque)
            Windup   -> Just (AttackInstance Peak     (naPeak def)     False (naDamage def) dirAtaque)
-           Peak     -> Just (AttackInstance Recovery (naRecovery def) hasHit (aiDamage ai) dirAtaque)
+           Peak     -> Just (AttackInstance Retract (naRetract def) hasHit (aiDamage ai) dirAtaque)
+           Retract  -> Just (AttackInstance Recovery (naRecovery def) hasHit (aiDamage ai) dirAtaque)
            Recovery -> Nothing
 
 

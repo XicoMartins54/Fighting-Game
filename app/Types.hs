@@ -29,6 +29,7 @@ data Fighter = Fighter
         keyLeft       :: Bool,
         keyRight      :: Bool,
         keyDown       :: Bool,
+        keyUp         :: Bool,
 
         normalAttack  :: Maybe AttackInstance,
 
@@ -66,7 +67,7 @@ defaultNormalAttack f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
   , naPeak     = 0.08
   , naRecovery = 0.1
   , naWidth    = tam / 5 * 3
-  , naHeight   = tam / 5
+  , naHeight   = tam / 4
   , naDamage   = 10    -- escolhe o valor que quiseres
   }
 
@@ -122,29 +123,30 @@ normalAttackHitbox (Fighter { normalAttack = Nothing }) = Nothing
 normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _ _ _ aiDir)
                              , fighterTamanho = tam
                              , fighterStance = stance
+                             , fighterDir = dir
                              , keyLeft = kl
                              , keyRight = kr
                              }) =
 
-  let def     = defaultNormalAttack f
-      defDown = defaultNormalAttackDown f
-      w       = naWidth def
-      h       = naHeight def
-      wDown   = naWidth defDown
-      hDown   = naHeight defDown
-      mult    = case phase of
-                  Windup   -> 0.6
-                  Peak     -> 1
-                  Recovery -> 0.6
+  let
+      -- escolhe a definição de ataque de acordo com stance e aiDir
+      def = if stance == Crouching
+              then defaultNormalAttack f           -- crouching = normal attack
+              else if aiDir `elem` [Baixo, BaixoDir, BaixoEsq]
+                     then defaultNormalAttackDown f  -- down attack
+                     else defaultNormalAttack f       -- normal / up attack
 
-      isDownAttack = case normalAttack f of
-                        Just (AttackInstance _ _ _ _ aiDir) 
-                          | fighterStance f /= Crouching -> aiDir `elem` [Baixo, BaixoDir, BaixoEsq]
-                          | otherwise -> False
-                        _ -> False
+      w = naWidth def
+      h = naHeight def
+      mult = case phase of
+               Windup   -> 0.6
+               Peak     -> 1
+               Recovery -> 0.6
 
+      -- faceSign baseado na direcao do fighter (esquerda = -1, direita = 1)
+      faceSign = case dir of Esquerda -> -1; Direita -> 1
 
-      -- sinal horizontal segundo a direcção do ataque guardada
+      -- sinal horizontal: se aiDir tem componente horiz usa-a, caso contrario usa facing
       signX = case aiDir of
                 Esq      -> -1
                 CimaEsq  -> -1
@@ -152,19 +154,29 @@ normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _ _ _ 
                 Dir      -> 1
                 CimaDir  -> 1
                 BaixoDir -> 1
-                _        -> 1 -- default para vertical/none usa facing à direita por segurança
+                Cima     -> faceSign
+                Baixo    -> faceSign
+                _        -> faceSign
 
       w' = w * mult
       offX = signX * w' / 2
       offY = tam / 3 * 2
+      offXUp = h/2 * signX
+      offYUp = w' / 2
 
-  in case (stance, isDownAttack) of
-       (Jumping, True)  -> Just (0, offY + hDown/2, wDown, hDown)
-       (Falling, True)  -> Just (0, offY + hDown/2, wDown, hDown)
-       (Jumping, False) -> Just (offX, 0, w', h)
-       (Falling, False) -> Just (offX, 0, w', h)
-       (_, True)        -> Just (offX, 0, wDown, hDown) -- ground down attack
-       (_, False)       -> Just (offX, 0, w', h)
+      -- decide se é up/down attack (apenas se não estivermos crouching para down)
+      isDownAttack = stance /= Crouching && aiDir `elem` [Baixo, BaixoDir, BaixoEsq]
+      isUpAttack   = aiDir `elem` [Cima, CimaDir, CimaEsq]
+
+  in case (isUpAttack, isDownAttack, stance) of
+     (_, True, Jumping)      -> Just (0, offY + (naHeight (defaultNormalAttackDown f)) / 2, naWidth (defaultNormalAttackDown f), naHeight (defaultNormalAttackDown f))
+     (_, True, Falling)      -> Just (0, offY + (naHeight (defaultNormalAttackDown f)) / 2, naWidth (defaultNormalAttackDown f), naHeight (defaultNormalAttackDown f))
+     (True, _, _)            -> Just (offXUp, -offYUp, h, w')                                    -- up attack above the fighter
+     (False, False, Jumping) -> Just (offX, 0, w', h)
+     (False, False, Falling) -> Just (offX, 0, w', h)
+     (_, True, _)            -> Just (offX, 0, naWidth (defaultNormalAttackDown f), naHeight (defaultNormalAttackDown f))  -- ground down
+     (_, False, _)           -> Just (offX, 0, w', h)
+
 
 
 
@@ -173,24 +185,32 @@ chooseAttackDir f =
   let kl = keyLeft f
       kr = keyRight f
       kd = keyDown f
+      ku = keyUp f          -- novo
       st = fighterStance f
       dirBase = case fighterDir f of Esquerda -> Esq; Direita -> Dir
       vy = fighterVelY f
+
       -- sinais base X/Y
       signX
         | kl && not kr = -1
         | kr && not kl = 1
         | otherwise    = 0
+
       signY
-        -- prioridade a "down" se o jogador estiver a carregar down
+        -- prioridade a "up" se o jogador estiver a carregar up
+        | ku && signX < 0 = 1   -- up+left
+        | ku && signX > 0 = 1   -- up+right
+        | ku              = 1
+        -- depois prioridade a "down" se o jogador estiver a carregar down
         | kd && signX < 0 = -1  -- down+left
         | kd && signX > 0 = -1  -- down+right
         | kd              = -1
         -- se estiver no ar, considera up ou down segundo vy
-        | st /= Standing && vy > 0 = 1  -- subir = up
+        | st /= Standing && vy > 0 = 1   -- subir = up
         | st /= Standing && vy <= 0 = -1 -- cair = down
         | otherwise = 0
-  in case (signX, signY) of
+
+      dirGuess = case (signX, signY) of
        (-1, -1) -> BaixoEsq
        ( 1, -1) -> BaixoDir
        ( 0, -1) -> Baixo
@@ -200,3 +220,9 @@ chooseAttackDir f =
        (-1,  0) -> Esq
        ( 1,  0) -> Dir
        ( 0,  0) -> dirBase
+  in case dirGuess of
+       -- proíbe down attacks se já estivermos crouching
+       Baixo    | st == Crouching -> dirBase
+       BaixoDir | st == Crouching -> dirBase
+       BaixoEsq | st == Crouching -> dirBase
+       _ -> dirGuess

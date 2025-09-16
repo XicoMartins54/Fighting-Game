@@ -155,18 +155,18 @@ stepNormalAttack _ _ Nothing = Nothing
 stepNormalAttack dt f (Just ai@(AttackInstance phase t hasHit dmg dirAtaque))
   | t > dt = Just (ai { aiTimer = t - dt })
   | otherwise =
-      -- Se o fighter está Crouching, usamos sempre o default normal (proíbe down-attack properties)
       let def = if fighterStance f == Crouching
                   then defaultNormalAttack f
                   else case dirAtaque of
                          Baixo    -> defaultNormalAttackDown f
                          BaixoDir -> defaultNormalAttackDown f
                          BaixoEsq -> defaultNormalAttackDown f
-                         _        -> defaultNormalAttack f
+                         _        -> defaultNormalAttack f  -- inclui up aqui
       in case phase of
            Windup   -> Just (AttackInstance Peak     (naPeak def)     False (naDamage def) dirAtaque)
-           Peak     -> Just (AttackInstance Recovery (naRecovery def) False (naDamage def) dirAtaque)
+           Peak     -> Just (AttackInstance Recovery (naRecovery def) hasHit (aiDamage ai) dirAtaque)
            Recovery -> Nothing
+
 
 
 

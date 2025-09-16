@@ -21,6 +21,7 @@ estadoInicial = World {player1 = p1, player2 = p2, mapa = mp}
                      , keyLeft = False
                      , keyRight = False
                      , keyDown = False
+                     , keyUp = False
                      , normalAttack = Nothing
                      , isInvincible = False
                      , invincibleTimer = 0
@@ -28,14 +29,15 @@ estadoInicial = World {player1 = p1, player2 = p2, mapa = mp}
 
         p2 = Fighter { fighterPos = (600, 0)
                      , fighterVida = 100
-                     , fighterTamanho = 400
-                     , fighterPeso = MuitoPesado
+                     , fighterTamanho = 300
+                     , fighterPeso = Pesado
                      , fighterStance = Standing
                      , fighterDir = Direita
                      , fighterVelY = 0
                      , keyLeft = False
                      , keyRight = False
                      , keyDown = False
+                     , keyUp = False
                      , normalAttack = Nothing
                      , isInvincible = False
                     , invincibleTimer = 0

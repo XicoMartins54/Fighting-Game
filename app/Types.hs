@@ -65,11 +65,11 @@ data NormalAttackDef = NormalAttackDef
 
 defaultNormalAttack :: Fighter -> NormalAttackDef
 defaultNormalAttack f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
-  { naStart    = 0.1
-  , naWindup   = 0.1
+  { naStart    = 0.12
+  , naWindup   = 0.08
   , naPeak     = 0.14
-  , naRetract  = 0.1
-  , naRecovery = 0.1
+  , naRetract  = 0.08
+  , naRecovery = 0.12
   , naWidth    = tam / 5 * 3
   , naHeight   = tam / 4
   , naDamage   = 10    -- escolhe o valor que quiseres
@@ -77,8 +77,8 @@ defaultNormalAttack f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
 
 defaultNormalAttackDown :: Fighter -> NormalAttackDef
 defaultNormalAttackDown f@(Fighter {fighterTamanho = tam}) = NormalAttackDef
-  { naStart    = 0.1
-  , naWindup   = 0.1
+  { naStart    = 0.05
+  , naWindup   = 0.05
   , naPeak     = 5
   , naRetract  = 0
   , naRecovery = 0
@@ -124,65 +124,98 @@ type IsHit = Bool
 type IsInvincible = Bool 
 
 
-normalAttackHitbox :: Fighter -> Maybe (Float, Float, Float, Float)
+-- retorna: Just (centerX, centerY, width, height, angleDegrees)
+normalAttackHitbox :: Fighter -> Maybe (Float, Float, Float, Float, Float)
 normalAttackHitbox (Fighter { normalAttack = Nothing }) = Nothing
 normalAttackHitbox f@(Fighter { normalAttack = Just (AttackInstance phase _ _ _ aiDir)
+                             , fighterPos = (x,y)
                              , fighterTamanho = tam
                              , fighterStance = stance
-                             , fighterDir = dir
-                             , keyLeft = kl
-                             , keyRight = kr
-                             }) =
+                             , fighterDir = dir }) =
 
   let
-      -- escolhe a definição de ataque de acordo com stance e aiDir
+      -- escolhe def conforme stance/aiDir (igual ao teu código)
       def = if stance == Crouching
-              then defaultNormalAttack f           -- crouching = normal attack
-              else if aiDir `elem` [Baixo, BaixoDir, BaixoEsq]
-                     then defaultNormalAttackDown f  -- down attack
-                     else defaultNormalAttack f       -- normal / up attack
+              then defaultNormalAttack f
+              else if aiDir `elem` [Baixo]
+                     then defaultNormalAttackDown f
+                     else defaultNormalAttack f
 
       w = naWidth def
       h = naHeight def
+
+      -- animação do tamanho conforme fase
       mult = case phase of
-               Start    -> 0.3
+               Start    -> 0.4
                Windup   -> 0.7
                Peak     -> 1
                Retract  -> 0.7
-               Recovery -> 0.3
-
-      -- faceSign baseado na direcao do fighter (esquerda = -1, direita = 1)
-      faceSign = case dir of Esquerda -> -1; Direita -> 1
-
-      -- sinal horizontal: se aiDir tem componente horiz usa-a, caso contrario usa facing
-      signX = case aiDir of
-                Esq      -> -1
-                CimaEsq  -> -1
-                BaixoEsq -> -1
-                Dir      -> 1
-                CimaDir  -> 1
-                BaixoDir -> 1
-                Cima     -> faceSign
-                Baixo    -> faceSign
+               Recovery -> 0.4
 
       w' = w * mult
-      offX = signX * w' / 2
-      offY = tam / 3 * 2
-      offXUp = h/2 * signX
-      offYUp = w' / 2
+      h' = h * mult
 
-      -- decide se é up/down attack (apenas se não estivermos crouching para down)
-      isDownAttack = stance /= Crouching && aiDir `elem` [Baixo, BaixoDir, BaixoEsq]
-      isUpAttack   = aiDir `elem` [Cima, CimaDir, CimaEsq]
 
-  in case (isUpAttack, isDownAttack, stance) of
-     (_, True, Jumping)      -> Just (0, offY + (naHeight (defaultNormalAttackDown f)) / 2, naWidth (defaultNormalAttackDown f), naHeight (defaultNormalAttackDown f))
-     (_, True, Falling)      -> Just (0, offY + (naHeight (defaultNormalAttackDown f)) / 2, naWidth (defaultNormalAttackDown f), naHeight (defaultNormalAttackDown f))
-     (True, _, _)            -> Just (offXUp, -offYUp, h, w')
-     (False, False, Jumping) -> Just (offX, 0, w', h)
-     (False, False, Falling) -> Just (offX, 0, w', h)
-     (_, True, _)            -> Just (offX, 0, naWidth (defaultNormalAttackDown f), naHeight (defaultNormalAttackDown f))
-     (_, False, _)           -> Just (offX, 0, w', h)
+      -- face sign
+      faceSign = case dir of Esquerda -> -1; Direita -> 1
+
+      -- horizontal sign base (se aiDir tiver componente horiz, usa-a; se for puramente vertical usa facing)
+      horizSign = case aiDir of
+                    Esq      -> -1
+                    CimaEsq  -> -1
+                    BaixoEsq -> -1
+                    Dir      -> 1
+                    CimaDir  -> 1
+                    BaixoDir -> 1
+                    Cima     -> faceSign
+                    Baixo    -> faceSign
+
+      -- offset base (ajusta visualmente se precisares)
+      offX = case aiDir of
+               Cima -> 0
+               CimaDir -> horizSign * (w' / 2)
+               CimaEsq -> horizSign * (w' / 2)
+               Baixo -> 0
+               BaixoDir -> horizSign * (w' / 2)
+               BaixoEsq -> horizSign * (w' / 2)
+               _ -> horizSign * (w' / 2)
+      offY = case aiDir of
+               Cima -> w' / 2
+               CimaDir -> w' / 2
+               CimaEsq -> w' / 2
+               Baixo -> -(tam / 3 * 2 + (h' / 2))
+               BaixoDir -> -(tam / 3 * 2)
+               BaixoEsq -> -(tam / 3 * 2)
+               _ -> 0
+
+
+
+      baseY = case stance of
+                Crouching -> (tam/2 - tam/3 - 450)
+                _         -> y + (tam/3*2) - 450
+
+      centerX = x + (tam/2)/2 + offX
+      centerY = baseY + offY
+
+      -- angle mapping (graus)
+      angleDeg = case aiDir of
+                   CimaDir  -> -45
+                   BaixoDir -> 45
+                   CimaEsq  -> -135
+                   BaixoEsq -> 135
+                   Cima     -> 90
+                   Baixo    -> -90
+                   _        -> 0
+
+  in
+    case aiDir of
+      Cima -> Just (centerX, centerY, w', h, angleDeg)
+      CimaDir -> Just (centerX, centerY, w', h, angleDeg)
+      CimaEsq -> Just (centerX, centerY, w', h, angleDeg)
+      Baixo -> Just (centerX, centerY, h', w, angleDeg)
+      BaixoDir -> Just (centerX, centerY, w', h, angleDeg)
+      BaixoEsq -> Just (centerX, centerY, w', h, angleDeg)
+      _ -> Just (centerX, centerY, w', h, angleDeg)
 
 
 

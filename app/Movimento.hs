@@ -2,7 +2,11 @@ module Movimento where
 
 import Types
 import Types (Fighter(normalAttack, fighterTamanho, fighterPeso), AttackInstance)
-import Data.Maybe (Maybe(Nothing))
+import Data.Maybe
+import Prelude hiding (minimum, maximum)
+import Data.List (minimum, maximum)
+import Data.Fixed (mod')
+
 
 gravityForPeso :: Peso -> Float
 gravityForPeso MuitoLeve   = -4500
@@ -159,8 +163,6 @@ stepNormalAttack dt f (Just ai@(AttackInstance phase t hasHit dmg dirAtaque))
                   then defaultNormalAttack f
                   else case dirAtaque of
                          Baixo    -> defaultNormalAttackDown f
-                         BaixoDir -> defaultNormalAttackDown f
-                         BaixoEsq -> defaultNormalAttackDown f
                          _        -> defaultNormalAttack f
       in case phase of
            Start    -> Just (AttackInstance Windup     (naWindup def)     False (naDamage def) dirAtaque)
@@ -184,7 +186,7 @@ attackHitboxWorld f@(Fighter { fighterPos = (x,y)
                             , fighterStance = stance }) =
   case normalAttackHitbox f of
     Nothing -> Nothing
-    Just (cx, cy, w, h) ->
+    Just (cx, cy, w, h, angle) ->
       let largura = altura / 2
           centerX = x + largura/2 + cx
           centerY = case stance of
@@ -214,22 +216,26 @@ decayInv dt f@(Fighter { isInvincible = inv, invincibleTimer = t })
 applyAttackOnce :: Fighter -> Fighter -> (Fighter, Fighter)
 applyAttackOnce attacker defender =
   case normalAttack attacker of
-    Just ai@(AttackInstance Peak _ hasHit dmg dirAtaque) | not hasHit ->
-      case attackHitboxWorld attacker of
-        Just hbAtt ->
-          let hbDef = fighterHurtbox defender
-          in if (not (isInvincible defender)) && rectsIntersect hbAtt hbDef
-             then
-               let defender' = defender { fighterVida = fighterVida defender - dmg
-                                       , isInvincible = True
-                                       , invincibleTimer = 0.4  -- 400ms invencibilidade (ajusta)
-                                       }
-                   ai' = ai { aiHasHit = True }
-                   attacker' = attacker { normalAttack = Just ai' }
-               in (attacker', defender')
-             else (attacker, defender)
-        Nothing -> (attacker, defender)
+    Just ai@(AttackInstance phase _ hasHit dmg dirAtaque)
+      | phase == Peak && not hasHit ->
+          case normalAttackHitbox attacker of
+              Just (cx, cy, w, h, angle) ->
+                  let (hx, hy, hw, hh) = fighterHurtbox defender
+                  in if not (isInvincible defender) && obbAabbIntersect (cx, cy, w, h, angle) (hx, hy, hw, hh, 0)
+                     then
+                         let ai' = ai { aiHasHit = True }
+                             attacker' = attacker { normalAttack = Just ai' }
+                             defender' = defender { fighterVida = fighterVida defender - dmg
+                                                  , isInvincible = True
+                                                  , invincibleTimer = 0.4
+                                                  }
+                         in (attacker', defender')
+                     else (attacker, defender)
+              Nothing -> (attacker, defender)
     _ -> (attacker, defender)
+
+
+
 
 -- resolve colisões dos dois fighters (aplica ataques de ambos, sem duplicar)
 resolveCollisions :: Fighter -> Fighter -> (Fighter, Fighter)
@@ -237,3 +243,55 @@ resolveCollisions p1 p2 =
   let (p1a, p2a) = applyAttackOnce p1 p2   -- p1 tenta acertar p2
       (p2b, p1b) = applyAttackOnce p2a p1a -- p2 (actualizado) tenta acertar p1 (actualizado)
   in (p1b, p2b)
+
+
+
+deg2rad :: Float -> Float
+deg2rad d = d * pi / 180
+
+-- calcula cantos da OBB (centro cx,cy; w,h; angle degrees)
+obbCorners :: (Float,Float,Float,Float,Float) -> [(Float,Float)]
+obbCorners (cx, cy, w, h, angleDeg) =
+  let a = deg2rad angleDeg
+      ux = cos a; uy = sin a      -- axis u
+      vx = -sin a; vy = cos a     -- axis v (perpendicular)
+      hx = w / 2; hy = h / 2
+      -- combinacoes
+      add (sx, sy) = (cx + sx, cy + sy)
+      corners =
+        [ add ( hx * ux + hy * vx,  hx * uy + hy * vy)
+        , add (-hx * ux + hy * vx, -hx * uy + hy * vy)
+        , add (-hx * ux - hy * vx, -hx * uy - hy * vy)
+        , add ( hx * ux - hy * vx,  hx * uy - hy * vy)
+        ]
+  in corners
+
+aabbCorners :: (Float,Float,Float,Float) -> [(Float,Float)]
+aabbCorners (cx, cy, w, h) =
+  let hx = w/2; hy = h/2
+  in [ (cx+hx, cy+hy), (cx-hx, cy+hy), (cx-hx, cy-hy), (cx+hx, cy-hy) ]
+
+-- project points on axis (nx,ny) and return (min,max)
+projectOnAxis :: (Float,Float) -> [(Float,Float)] -> (Float,Float)
+projectOnAxis (nx,ny) pts =
+  let dots = map (\(x,y) -> x*nx + y*ny) pts
+  in (minimum dots, maximum dots)
+
+-- check overlap intervals
+intervalsOverlap :: (Float,Float) -> (Float,Float) -> Bool
+intervalsOverlap (aMin,aMax) (bMin,bMax) = not (aMax < bMin || bMax < aMin)
+
+-- axes to test: two axes from OBB (u and v) and world axes (1,0) and (0,1) for safety
+obbAxes :: Float -> [(Float,Float)]
+obbAxes angleDeg =
+  let a = deg2rad angleDeg
+  in [(cos a, sin a), (-sin a, cos a)]
+
+obbAabbIntersect :: (Float, Float, Float, Float, Float)  -- ataque
+                 -> (Float, Float, Float, Float, Float)  -- defensor
+                 -> Bool
+obbAabbIntersect (x1, y1, w1, h1, angle1) (x2, y2, w2, h2, angle2) =
+    -- para já, ignora o angle, assume axis-aligned
+    x1 < x2 + w2 && x1 + w1 > x2 &&
+    y1 < y2 + h2 && y1 + h1 > y2
+

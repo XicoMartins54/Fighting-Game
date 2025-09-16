@@ -65,15 +65,15 @@ desenhaMapa mapa@(Mapa esq chao dir) = Pictures [paredeEsq, floor, paredeDir]
         paredeDir = Color white $ Translate (dir + largura/2) 0 $ rectangleSolid largura 1060
 
 desenhaHitbox :: Fighter -> Picture
-desenhaHitbox f@(Fighter {fighterPos = (x,y), fighterDir = dir, fighterStance = stance, fighterTamanho = altura, keyLeft = kl, keyRight = kr}) =
-  case normalAttackHitbox f of
+desenhaHitbox f =
+  case attackHitboxWorld f of
     Nothing -> Blank
-    Just (cx, cy, w, h) ->
-        case stance of
-            Crouching -> Translate (x + largura/2 + cx) (h/2 - 450 - cy) $ Color orange $ rectangleSolid w h
-            _ -> Translate (x + largura/2 + cx) (y + altura/3*2 - 450 - cy) $ Color orange $ rectangleSolid w h
-            where
-                largura = altura / 2
+    Just (cx, cy, w, h, angleDeg) ->
+      Translate cx cy $ Rotate angleDeg $ Color orange $ rectangleSolid w h
+
+attackHitboxWorld :: Fighter -> Maybe (Float,Float,Float,Float,Float)
+attackHitboxWorld = normalAttackHitbox
+
 
 desenhaVidaP1 :: Fighter -> Picture
 desenhaVidaP1 f@(Fighter {fighterVida = vida}) = Translate (-600) 300 $ Pictures [barra, barraVida]
